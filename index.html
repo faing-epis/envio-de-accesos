@@ -4,49 +4,103 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestor de Envío de Correos EPIS</title>
-<!-- Estilos (sin cambios) -->
 <style>
-:root { --primary-color: #005fba; --light-gray: #f4f5f7; --medium-gray: #dee2e6; --dark-gray: #343a40; --white: #ffffff; --success: #28a745; --danger: #dc3545; }
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background-color: var(--light-gray); color: var(--dark-gray); }
-.container { max-width: 1200px; margin: 20px auto; padding: 20px; background-color: var(--white); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-h1 { text-align: center; }
-.controls { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #f8f9fa; border: 1px solid var(--medium-gray); border-radius: 6px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-.select-all-group { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
-.send-button { background-color: var(--primary-color); color: var(--white); border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight: bold; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-.send-button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
-.table-wrapper { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 12px 15px; border-bottom: 1px solid var(--medium-gray); text-align: left; }
-thead th { background-color: var(--primary-color); color: var(--white); position: sticky; top: 0; }
-tbody tr:hover { background-color: #e6f0fa; }
-input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
-#status-area { text-align: center; padding: 15px; margin-top: 20px; border-radius: 6px; font-weight: 500; display: none; word-break: break-word; }
-.status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
-.status-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
-.spinner { border: 4px solid rgba(255,255,255,0.3); width: 18px; height: 18px; border-radius: 50%; border-left-color: var(--white); animation: spin 1s ease infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+    :root { 
+        --primary-color: #005fba; --light-gray: #f4f5f7; --medium-gray: #dee2e6; 
+        --dark-gray: #343a40; --white: #ffffff; --success: #28a745; --danger: #dc3545; 
+        --shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    body { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+        margin: 0; background-color: var(--light-gray); color: var(--dark-gray); 
+    }
+    .container { 
+        max-width: 1400px; margin: 20px auto; padding: 20px; 
+        background-color: var(--white); border-radius: 8px; box-shadow: var(--shadow); 
+    }
+    h1 { text-align: center; color: var(--primary-color); }
+    .controls { 
+        display: flex; justify-content: space-between; align-items: center; 
+        padding: 15px; background-color: #f8f9fa; border: 1px solid var(--medium-gray); 
+        border-radius: 6px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; 
+    }
+    /* --- NUEVO: Estilos para la barra de búsqueda --- */
+    .search-bar {
+        flex-grow: 1;
+        max-width: 400px;
+        padding: 8px 12px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: 1px solid var(--medium-gray);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-bar:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(0, 95, 186, 0.2);
+    }
+    .select-all-group { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
+    .send-button { 
+        background-color: var(--primary-color); color: var(--white); border: none; 
+        padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight: bold; 
+        transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; 
+    }
+    .send-button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 15px; border-bottom: 1px solid var(--medium-gray); text-align: left; white-space: nowrap; }
+    thead th { background-color: var(--primary-color); color: var(--white); position: sticky; top: 0; }
+    tbody tr:hover { background-color: #e6f0fa; }
+    input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+    #status-area { text-align: center; padding: 15px; margin-top: 20px; border-radius: 6px; font-weight: 500; display: none; word-break: break-word; }
+    .status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+    .status-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
+    .spinner { border: 4px solid rgba(255,255,255,0.3); width: 18px; height: 18px; border-radius: 50%; border-left-color: var(--white); animation: spin 1s ease infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* --- NUEVO: Media Query para responsividad --- */
+    @media (max-width: 768px) {
+        .controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .search-bar {
+            max-width: 100%;
+        }
+    }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Gestor de Envío a Docentes</h1>
-<div class="controls">
-<label class="select-all-group"><input type="checkbox" id="header-checkbox"><span>Seleccionar Todos</span></label>
-<button class="send-button" id="send-button" disabled>
-<div id="button-spinner" class="spinner" style="display: none;"></div>
-<span id="button-text">Enviar Correos Seleccionados</span>
-</button>
-</div>
-<div class="table-wrapper"><table id="tabla-docentes">
-<thead><tr><th><input type="checkbox" id="header-checkbox-in-table" title="Seleccionar Todos"></th><th>Nombre Completo</th><th>Correo Electrónico</th><th>Contraseña</th></tr></thead>
-<tbody></tbody>
-</table></div>
-<div id="status-area"></div>
+    <h1>Gestor de Envío a Docentes</h1>
+    <div class="controls">
+        <label class="select-all-group"><input type="checkbox" id="header-checkbox"><span>Seleccionar Todos</span></label>
+        
+        <!-- --- NUEVO: Barra de Búsqueda --- -->
+        <input type="text" id="search-input" class="search-bar" placeholder="Buscar docente por nombre o correo...">
+        
+        <button class="send-button" id="send-button" disabled>
+            <div id="button-spinner" class="spinner" style="display: none;"></div>
+            <span id="button-text">Enviar Correos Seleccionados</span>
+        </button>
+    </div>
+    <div class="table-wrapper">
+        <table id="tabla-docentes">
+            <!-- --- MODIFICADO: Añadida nueva columna en la cabecera --- -->
+            <thead><tr>
+                <th><input type="checkbox" id="header-checkbox-in-table" title="Seleccionar Todos"></th>
+                <th>Nombre Completo</th>
+                <th>Correo Electrónico</th>
+                <th>Correo con Copia (CC)</th>
+                <th>Contraseña</th>
+            </tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div id="status-area"></div>
 </div>
 <script>
-    // --- CONFIGURACIÓN ---
-    // PEGA AQUÍ LA **NUEVA** URL DE IMPLEMENTACIÓN
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzOZlZLaawGZzkl7lmehPB4kGJRtiq_uHbQ898mkd1_hkbiwD0k5iboI2xyvhdbsEUI3Q/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxUM0CSEnYgBOmAmJ_usOozM_LSEGy6fCEuPboWBTYU4ypN89FqEEj9oLIFd4aFaf8biw/exec";
 
     let listaDocentes = [];
     const sendButton = document.getElementById('send-button');
@@ -56,6 +110,7 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
     const buttonSpinner = document.getElementById('button-spinner');
     const mainCheckbox1 = document.getElementById('header-checkbox');
     const mainCheckbox2 = document.getElementById('header-checkbox-in-table');
+    const searchInput = document.getElementById('search-input'); // --- NUEVO ---
 
     function showStatus(message, type = 'success') {
         statusArea.textContent = message;
@@ -64,37 +119,43 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
     }
 
     async function cargarDatos() {
-        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px;">Cargando datos...</td></tr>`;
+        // --- MODIFICADO: Colspan ahora es 5 ---
+        tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px;">Cargando datos...</td></tr>`;
         if (WEB_APP_URL === "URL_DE_IMPLEMENTACION_AQUI" || WEB_APP_URL === "") {
             showStatus('Error de Configuración: Pega la URL de tu script en la variable WEB_APP_URL del archivo HTML.', 'danger');
             return;
         }
         try {
             const response = await fetch(WEB_APP_URL);
-            if (!response.ok) throw new Error(`Error de Red al cargar (${response.status}). Revisa que la URL sea correcta.`);
+            if (!response.ok) throw new Error(`Error de Red al cargar (${response.status}).`);
             const result = await response.json();
             if (!result.success) throw new Error(`Error del Servidor: ${result.message}`);
             listaDocentes = result.data;
-            renderTable();
+            renderTable(listaDocentes); // Pasamos la lista para poder filtrar después
         } catch (error) {
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px;"></td></tr>`;
-            showStatus(`Fallo al cargar: ${error.message}. Revisa la consola (F12) por errores de CORS.`, 'danger');
+            tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 40px;"></td></tr>`;
+            showStatus(`Fallo al cargar: ${error.message}. Revisa la consola (F12).`, 'danger');
             console.error(error);
         }
     }
     
-    function renderTable() {
+    // --- MODIFICADO: La función ahora renderiza lo que se le pase como argumento ---
+    function renderTable(docentes) {
         tableBody.innerHTML = "";
-        if (!listaDocentes || listaDocentes.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px;">No se encontraron docentes.</td></tr>`;
+        if (!docentes || docentes.length === 0) {
+            tableBody.innerHTML = `<tr id="no-results-row"><td colspan="5" style="text-align:center; padding: 40px;">No se encontraron docentes.</td></tr>`;
+            sendButton.disabled = true;
             return;
         }
-        listaDocentes.forEach((docente, index) => {
+        docentes.forEach((docente) => {
+            // Buscamos el índice original para no perder la referencia al seleccionar
+            const originalIndex = listaDocentes.findIndex(d => d.correo === docente.correo && d.nombre === docente.nombre);
             const row = tableBody.insertRow();
             row.innerHTML = `
-                <td><input type="checkbox" class="teacher-checkbox" data-index="${index}"></td>
+                <td><input type="checkbox" class="teacher-checkbox" data-index="${originalIndex}"></td>
                 <td>${docente.nombre || 'N/A'}</td>
                 <td>${docente.correo || 'N/A'}</td>
+                <td>${docente.correo2 || 'N/A'}</td>
                 <td>${docente.clave || 'N/A'}</td>`;
         });
         sendButton.disabled = false;
@@ -104,10 +165,16 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
         const isChecked = masterCheckbox.checked;
         mainCheckbox1.checked = isChecked;
         mainCheckbox2.checked = isChecked;
-        document.querySelectorAll('.teacher-checkbox').forEach(cb => cb.checked = isChecked);
+        // Solo afecta a los checkboxes visibles
+        document.querySelectorAll('.teacher-checkbox').forEach(cb => {
+            if(cb.closest('tr').style.display !== 'none') {
+                cb.checked = isChecked;
+            }
+        });
     }
     
     async function enviarCorreos() {
+        // Obtenemos los docentes de los checkboxes marcados
         const docentesSeleccionados = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
             .map(cb => listaDocentes[cb.dataset.index]);
 
@@ -122,31 +189,17 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
         buttonSpinner.style.display = 'block';
 
         try {
-            // ESTA ES LA PARTE CLAVE CORREGIDA
-            // Usamos 'text/plain' como Content-Type, igual que en el ejemplo funcional.
             const response = await fetch(WEB_APP_URL, {
-                method: 'POST',
-                mode: 'cors', // Necesario para peticiones a otros dominios
-                cache: 'no-cache', // Evita que el navegador guarde respuestas antiguas
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
+                method: 'POST', mode: 'cors', cache: 'no-cache',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ docentes: docentesSeleccionados })
             });
-
-            if (!response.ok) {
-              throw new Error(`El servidor respondió con un error de red: ${response.status}`);
-            }
-            
+            if (!response.ok) throw new Error(`El servidor respondió con un error: ${response.status}`);
             const result = await response.json();
-            if (!result.success) {
-              throw new Error(result.message);
-            }
-
+            if (!result.success) throw new Error(result.message);
             showStatus(result.message, 'success');
-
         } catch (error) {
-            showStatus(`FALLO EL ENVÍO: ${error.message}. Revisa la consola (F12) para más detalles.`, 'danger');
+            showStatus(`FALLO EL ENVÍO: ${error.message}. Revisa la consola (F12).`, 'danger');
             console.error("Detalle completo del error:", error);
         } finally {
             sendButton.disabled = false;
@@ -155,6 +208,28 @@ input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
         }
     }
 
+    // --- NUEVO: Event listener para la búsqueda ---
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = tableBody.getElementsByTagName('tr');
+        let found = false;
+        for (const row of rows) {
+            const rowText = row.textContent.toLowerCase();
+            if (rowText.includes(searchTerm)) {
+                row.style.display = "";
+                found = true;
+            } else {
+                row.style.display = "none";
+            }
+        }
+        
+        // Muestra u oculta el mensaje de "No se encontraron resultados"
+        const noResultsRow = document.getElementById('no-results-row');
+        if (noResultsRow) noResultsRow.style.display = found ? 'none' : '';
+    });
+
+
+    // Event listeners
     mainCheckbox1.addEventListener('change', () => toggleAllCheckboxes(mainCheckbox1));
     mainCheckbox2.addEventListener('change', () => toggleAllCheckboxes(mainCheckbox2));
     sendButton.addEventListener('click', enviarCorreos);
