@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestor de Envío de Correos EPIS</title>
+<!-- Estilos (sin cambios) -->
+<style>
+:root { --primary-color: #005fba; --light-gray: #f4f5f7; --medium-gray: #dee2e6; --dark-gray: #343a40; --white: #ffffff; --success: #28a745; --danger: #dc3545; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background-color: var(--light-gray); color: var(--dark-gray); }
+.container { max-width: 1200px; margin: 20px auto; padding: 20px; background-color: var(--white); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+h1 { text-align: center; }
+.controls { display: flex; justify-content: space-between; align-items: center; padding: 15px; background-color: #f8f9fa; border: 1px solid var(--medium-gray); border-radius: 6px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+.select-all-group { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; }
+.send-button { background-color: var(--primary-color); color: var(--white); border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight: bold; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.send-button:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px 15px; border-bottom: 1px solid var(--medium-gray); text-align: left; }
+thead th { background-color: var(--primary-color); color: var(--white); position: sticky; top: 0; }
+tbody tr:hover { background-color: #e6f0fa; }
+input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+#status-area { text-align: center; padding: 15px; margin-top: 20px; border-radius: 6px; font-weight: 500; display: none; word-break: break-word; }
+.status-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+.status-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
+.spinner { border: 4px solid rgba(255,255,255,0.3); width: 18px; height: 18px; border-radius: 50%; border-left-color: var(--white); animation: spin 1s ease infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Gestor de Envío a Docentes</h1>
+<div class="controls">
+<label class="select-all-group"><input type="checkbox" id="header-checkbox"><span>Seleccionar Todos</span></label>
+<button class="send-button" id="send-button" disabled>
+<div id="button-spinner" class="spinner" style="display: none;"></div>
+<span id="button-text">Enviar Correos Seleccionados</span>
+</button>
+</div>
+<div class="table-wrapper"><table id="tabla-docentes">
+<thead><tr><th><input type="checkbox" id="header-checkbox-in-table" title="Seleccionar Todos"></th><th>Nombre Completo</th><th>Correo Electrónico</th><th>Contraseña</th></tr></thead>
+<tbody></tbody>
+</table></div>
+<div id="status-area"></div>
+</div>
+<script>
+    // --- CONFIGURACIÓN ---
+    // PEGA AQUÍ LA **NUEVA** URL DE IMPLEMENTACIÓN
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzOZlZLaawGZzkl7lmehPB4kGJRtiq_uHbQ898mkd1_hkbiwD0k5iboI2xyvhdbsEUI3Q/exec";
+
+    let listaDocentes = [];
+    const sendButton = document.getElementById('send-button');
+    const tableBody = document.querySelector("#tabla-docentes tbody");
+    const statusArea = document.getElementById('status-area');
+    const buttonText = document.getElementById('button-text');
+    const buttonSpinner = document.getElementById('button-spinner');
+    const mainCheckbox1 = document.getElementById('header-checkbox');
+    const mainCheckbox2 = document.getElementById('header-checkbox-in-table');
+
+    function showStatus(message, type = 'success') {
+        statusArea.textContent = message;
+        statusArea.className = type === 'success' ? 'status-success' : 'status-danger';
+        statusArea.style.display = 'block';
+    }
+
+    async function cargarDatos() {
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px;">Cargando datos...</td></tr>`;
+        if (WEB_APP_URL === "URL_DE_IMPLEMENTACION_AQUI" || WEB_APP_URL === "") {
+            showStatus('Error de Configuración: Pega la URL de tu script en la variable WEB_APP_URL del archivo HTML.', 'danger');
+            return;
+        }
+        try {
+            const response = await fetch(WEB_APP_URL);
+            if (!response.ok) throw new Error(`Error de Red al cargar (${response.status}). Revisa que la URL sea correcta.`);
+            const result = await response.json();
+            if (!result.success) throw new Error(`Error del Servidor: ${result.message}`);
+            listaDocentes = result.data;
+            renderTable();
+        } catch (error) {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px;"></td></tr>`;
+            showStatus(`Fallo al cargar: ${error.message}. Revisa la consola (F12) por errores de CORS.`, 'danger');
+            console.error(error);
+        }
+    }
+    
+    function renderTable() {
+        tableBody.innerHTML = "";
+        if (!listaDocentes || listaDocentes.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 40px;">No se encontraron docentes.</td></tr>`;
+            return;
+        }
+        listaDocentes.forEach((docente, index) => {
+            const row = tableBody.insertRow();
+            row.innerHTML = `
+                <td><input type="checkbox" class="teacher-checkbox" data-index="${index}"></td>
+                <td>${docente.nombre || 'N/A'}</td>
+                <td>${docente.correo || 'N/A'}</td>
+                <td>${docente.clave || 'N/A'}</td>`;
+        });
+        sendButton.disabled = false;
+    }
+
+    function toggleAllCheckboxes(masterCheckbox) {
+        const isChecked = masterCheckbox.checked;
+        mainCheckbox1.checked = isChecked;
+        mainCheckbox2.checked = isChecked;
+        document.querySelectorAll('.teacher-checkbox').forEach(cb => cb.checked = isChecked);
+    }
+    
+    async function enviarCorreos() {
+        const docentesSeleccionados = Array.from(document.querySelectorAll('.teacher-checkbox:checked'))
+            .map(cb => listaDocentes[cb.dataset.index]);
+
+        if (docentesSeleccionados.length === 0) {
+            showStatus('Por favor, seleccione al menos un docente.', 'danger');
+            return;
+        }
+        
+        sendButton.disabled = true;
+        statusArea.style.display = 'none';
+        buttonText.textContent = 'Enviando...';
+        buttonSpinner.style.display = 'block';
+
+        try {
+            // ESTA ES LA PARTE CLAVE CORREGIDA
+            // Usamos 'text/plain' como Content-Type, igual que en el ejemplo funcional.
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'cors', // Necesario para peticiones a otros dominios
+                cache: 'no-cache', // Evita que el navegador guarde respuestas antiguas
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify({ docentes: docentesSeleccionados })
+            });
+
+            if (!response.ok) {
+              throw new Error(`El servidor respondió con un error de red: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+              throw new Error(result.message);
+            }
+
+            showStatus(result.message, 'success');
+
+        } catch (error) {
+            showStatus(`FALLO EL ENVÍO: ${error.message}. Revisa la consola (F12) para más detalles.`, 'danger');
+            console.error("Detalle completo del error:", error);
+        } finally {
+            sendButton.disabled = false;
+            buttonText.textContent = 'Enviar Correos Seleccionados';
+            buttonSpinner.style.display = 'none';
+        }
+    }
+
+    mainCheckbox1.addEventListener('change', () => toggleAllCheckboxes(mainCheckbox1));
+    mainCheckbox2.addEventListener('change', () => toggleAllCheckboxes(mainCheckbox2));
+    sendButton.addEventListener('click', enviarCorreos);
+    document.addEventListener('DOMContentLoaded', cargarDatos);
+</script>
+</body>
+</html>
